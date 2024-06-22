@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduPlatform Management</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        table, th, td { border: 1px solid #ccc; }
+        th, td { padding: 10px; text-align: left; }
+        form { display: flex; flex-direction: column; margin-bottom: 20px; }
+        input, button { padding: 10px; margin: 5px 0; }
+        h2 { margin-top: 40px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>EduPlatform Management</h1>
+
+        <h2>Courses</h2>
+        <form id="courseForm">
+            <input type="number" id="courseId" placeholder="Course ID" required>
+            <input type="text" id="courseName" placeholder="Course Name" required>
+            <input type="number" id="courseDuration" placeholder="Course Duration (hours)" required>
+            <button type="submit">Add/Update Course</button>
+        </form>
+        <table id="coursesTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Duration</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h2>Instructors</h2>
+        <form id="instructorForm">
+            <input type="number" id="instructorId" placeholder="Instructor ID" required>
+            <input type="text" id="instructorName" placeholder="Instructor Name" required>
+            <input type="number" id="instructorCourseId" placeholder="Course ID" required>
+            <button type="submit">Add/Update Instructor</button>
+        </form>
+        <table id="instructorsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Course ID</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h2>Students</h2>
+        <form id="studentForm">
+            <input type="number" id="studentId" placeholder="Student ID" required>
+            <input type="text" id="studentName" placeholder="Student Name" required>
+            <button type="submit">Add/Update Student</button>
+        </form>
+        <table id="studentsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h2>Enrollments</h2>
+        <form id="enrollmentForm">
+            <input type="number" id="enrollmentId" placeholder="Enrollment ID" required>
+            <input type="number" id="enrollmentStudentId" placeholder="Student ID" required>
+            <input type="number" id="enrollmentCourseId" placeholder="Course ID" required>
+            <input type="number" step="0.01" id="enrollmentProgress" placeholder="Progress" required>
+            <button type="submit">Add/Update Enrollment</button>
+        </form>
+        <table id="enrollmentsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Student ID</th>
+                    <th>Course ID</th>
+                    <th>Progress</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h2>Grades</h2>
+        <form id="gradeForm">
+            <input type="number" id="gradeEnrollmentId" placeholder="Enrollment ID" required>
+            <input type="number" step="0.01" id="gradeValue" placeholder="Grade" required>
+            <button type="submit">Add/Update Grade</button>
+        </form>
+        <table id="gradesTable">
+            <thead>
+                <tr>
+                    <th>Enrollment ID</th>
+                    <th>Grade</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        const apiUrl = 'http://localhost:3000';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchAndDisplayData('courses');
+            fetchAndDisplayData('instructors');
+            fetchAndDisplayData('students');
+            fetchAndDisplayData('enrollments');
+            fetchAndDisplayData('grades');
+
+            setupFormHandlers();
+        });
+
+        function setupFormHandlers() {
+            document.getElementById('courseForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const courseId = document.getElementById('courseId').value;
+                const courseName = document.getElementById('courseName').value;
+                const courseDuration = document.getElementById('courseDuration').value;
+
+                if (courseId) {
+                    updateData('courses', courseId, { course_id: courseId, course_name: courseName, course_duration: courseDuration });
+                } else {
+                    addData('courses', { course_id: courseId, course_name: courseName, course_duration: courseDuration });
+                }
+            });
+
+            document.getElementById('instructorForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const instructorId = document.getElementById('instructorId').value;
+                const instructorName = document.getElementById('instructorName').value;
+                const instructorCourseId = document.getElementById('instructorCourseId').value;
+
+                if (instructorId) {
+                    updateData('instructors', instructorId, { instructor_id: instructorId, instructor_name: instructorName, course_id: instructorCourseId });
+                } else {
+                    addData('instructors', { instructor_name: instructorName, course_id: instructorCourseId });
+                }
+            });
+
+            document.getElementById('studentForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const studentId = document.getElementById('studentId').value;
+                const studentName = document.getElementById('studentName').value;
+
+                if (studentId) {
+                    updateData('students', studentId, { student_id: studentId, student_name: studentName });
+                } else {
+                    addData('students', { student_name: studentName });
+                }
+            });
+
+            document.getElementById('enrollmentForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const enrollmentId = document.getElementById('enrollmentId').value;
+                const enrollmentStudentId = document.getElementById('enrollmentStudentId').value;
+                const enrollmentCourseId = document.getElementById('enrollmentCourseId').value;
+                const enrollmentProgress = document.getElementById('enrollmentProgress').value;
+
+                if (enrollmentId) {
+                    updateData('enrollments', enrollmentId, {
+                        enrollment_id: enrollmentId,
+                        student_id: enrollmentStudentId,
+                        course_id: enrollmentCourseId,
+                        progress: enrollmentProgress
+                    });
+                } else {
+                    addData('enrollments', {
+                        student_id: enrollmentStudentId,
+                        course_id: enrollmentCourseId,
+                        progress: enrollmentProgress
+                    });
+                }
+            });
+
+            document.getElementById('gradeForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const gradeEnrollmentId = document.getElementById('gradeEnrollmentId').value;
+                const gradeValue = document.getElementById('gradeValue').value;
+
+                updateData('grades', gradeEnrollmentId, { enrollment_id: gradeEnrollmentId, grade: gradeValue });
+            });
+        }
+
+        function fetchAndDisplayData(type) {
+            fetch(`${apiUrl}/${type}`)
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.querySelector(`#${type}Table tbody`);
+                    tableBody.innerHTML = '';
+
+                    data.forEach(item => {
+                        const tr = document.createElement('tr');
+                        Object.keys(item).forEach(key => {
+                            const td = document.createElement('td');
+                            td.textContent = item[key];
+                            tr.appendChild(td);
+                        });
+
+                        const actionsTd = document.createElement('td');
+                        actionsTd.innerHTML = `
+                            <button onclick="edit${type.charAt(0).toUpperCase() + type.slice(1)}(${Object.values(item).map(v => `'${v}'`).join(", ")})">Edit</button>
+                            <button onclick="deleteData('${type}', ${item.id || item.enrollment_id})">Delete</button>
+                        `;
+                        tr.appendChild(actionsTd);
+
+                        tableBody.appendChild(tr);
+                    });
+                });
+        }
+
+        function addData(type, data) {
+            fetch(`${apiUrl}/${type}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(() => fetchAndDisplayData(type))
+            .catch(error => console.error('Error adding data:', error));
+        }
+
+        function updateData(type, id, data) {
+            fetch(`${apiUrl}/${type}/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(() => fetchAndDisplayData(type))
+            .catch(error => console.error('Error updating data:', error));
+        }
+
+        function deleteData(type, id) {
+            fetch(`${apiUrl}/${type}/${id}`, {
+                method: 'DELETE'
+            })
+            .then(() => fetchAndDisplayData(type))
+            .catch(error => console.error('Error deleting data:', error));
+        }
+
+        function editCourses(id, name, duration) {
+            document.getElementById('courseId').value = id;
+            document.getElementById('courseName').value = name;
+            document.getElementById('courseDuration').value = duration;
+        }
+
+        function editInstructors(id, name, courseId) {
+            document.getElementById('instructorId').value = id;
+            document.getElementById('instructorName').value = name;
+            document.getElementById('instructorCourseId').value = courseId;
+        }
+
+        function editStudents(id, name) {
+            document.getElementById('studentId').value = id;
+            document.getElementById('studentName').value = name;
+        }
+
+        function editEnrollments(id, studentId, courseId, progress) {
+            document.getElementById('enrollmentId').value = id;
+            document.getElementById('enrollmentStudentId').value = studentId;
+            document.getElementById('enrollmentCourseId').value = courseId;
+            document.getElementById('enrollmentProgress').value = progress;
+        }
+
+        function editGrades(enrollmentId, grade) {
+            document.getElementById('gradeEnrollmentId').value = enrollmentId;
+            document.getElementById('gradeValue').value = grade;
+        }
+        
+
+    function addNewCourse() {
+        const courseId = document.getElementById('courseId').value;
+        const courseName = document.getElementById('courseName').value;
+        const courseDuration = document.getElementById('courseDuration').value;
+        if (!courseId || !courseName || !courseDuration) {
+            alert('Please fill out all fields.');
+            return;
+        }
+
+        const tableBody = document.querySelector('#coursesTable tbody');
+        const tr = document.createElement('tr');
+
+        const tdId = document.createElement('td');
+        tdId.textContent = courseId;
+        tr.appendChild(tdId);
+
+        const tdName = document.createElement('td');
+        tdName.textContent = courseName;
+        tr.appendChild(tdName);
+
+        const tdDuration = document.createElement('td');
+        tdDuration.textContent = courseDuration;
+        tr.appendChild(tdDuration);
+
+        const tdActions = document.createElement('td');
+        tdActions.innerHTML = `
+            <button onclick="editCourses('${courseId}', '${courseName}', '${courseDuration}')">Edit</button>
+            <button onclick="deleteData('courses', '${courseId}')">Delete</button>
+        `;
+        tr.appendChild(tdActions);
+
+        tableBody.appendChild(tr);
+        document.getElementById('courseId').value = '';
+        document.getElementById('courseName').value = '';
+        document.getElementById('courseDuration').value = '';
+    }
+
+    document.getElementById('courseForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        addNewCourse();
+    });
+    function deleteData(type, id) {
+        const tableBody = document.querySelector(`#${type}Table tbody`);
+        const rowToDelete = tableBody.querySelector(`tr[data-id="${id}"]`);
+        if (rowToDelete) {
+            tableBody.removeChild(rowToDelete);
+        }
+    }
+
+
+    </script>
+</body>
+</html>
